@@ -1,4 +1,4 @@
 AuthType Basic
-AuthUserFile /home/icosm006/public_html/member/.htpasswd
+AuthUserFile https://github.com/icosmology/icosmology.github.io/tree/master/member/.htpasswd
 AuthName "member only area"
 Require valid-user
