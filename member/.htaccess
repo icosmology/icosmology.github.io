@@ -1,0 +1,4 @@
+AuthType Basic
+AuthUserFile /home/icosm006/public_html/member/.htpasswd
+AuthName "member only area"
+Require valid-user
