@@ -2,14 +2,18 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 	<url>
 		<loc>https://icosmology.github.io/index.html</loc>
+		<lastmod>2025-06-09</lastmod>
 	</url>
 	<url>
 		<loc>https://icosmology.github.io/research/index.html</loc>
+		<lastmod>2025-06-09</lastmod>
 	</url>
 	<url>
 		<loc>https://icosmology.github.io/publications/index.html</loc>
+		<lastmod>2025-06-09</lastmod>
 	</url>
 	<url>
 		<loc>https://icosmology.github.io/teaching/index.html</loc>
+		<lastmod>2025-06-09</lastmod>
 	</url>
 </urlset>
