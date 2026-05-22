@@ -1,0 +1,313 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,mathtools,bm}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{listings}
+
+\title{Solutions to the Exercises and Homework in Lecture 13\\Fundamentals of Observational Cosmology}
+\author{}
+\date{}
+
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\obs}{\mathrm{obs}}
+\newcommand{\thm}{\mathrm{th}}
+\newcommand{\C}{\mathbf C}
+\newcommand{\W}{\mathbf W}
+\newcommand{\M}{\mathbf M}
+\newcommand{\tvec}{\mathbf t}
+\newcommand{\dvec}{\mathbf d}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  columns=fullflexible,
+  frame=single,
+  keepspaces=true,
+  showstringspaces=false,
+  breaklines=true
+}
+
+\begin{document}
+\maketitle
+
+These notes provide worked solutions to the exercise set and homework problems in Lecture 13.
+For the coding-style homework problem, I also provide a standalone pedagogical Julia file,
+\texttt{lecture13\_bao\_forward\_model.jl}.
+
+\section*{Exercise 1. From the continuous convolution to a window matrix}
+\textbf{Question.} Starting from the continuous convolution, derive the binned matrix equation
+\[
+P^{\obs}_{\ell,i}=\sum_{\ell',j}\mathcal{W}^{\ell\ell'}_{ij}P^{\thm}_{\ell'}(k_j).
+\]
+
+\bigskip
+\textbf{Solution.}
+After projecting the anisotropic power spectrum onto Legendre multipoles and reducing the survey convolution, the observed multipoles can be written schematically as a linear integral transform,
+\[
+P^{\obs}_{\ell}(k)=\sum_{\ell'}\int \dd q\,K_{\ell\ell'}(k,q)\,P^{\thm}_{\ell'}(q),
+\]
+where $K_{\ell\ell'}(k,q)$ is the continuous kernel produced by the survey mask and estimator. The important point is that the operation is \emph{linear} in the theory multipoles.
+
+Now define the measured band power in data bin $i$ by averaging the continuous observable over that bin with some binning kernel $B_i(k)$:
+\[
+P^{\obs}_{\ell,i}=\int \dd k\,B_i(k)\,P^{\obs}_{\ell}(k).
+\]
+Insert the continuous window relation:
+\[
+P^{\obs}_{\ell,i}=\sum_{\ell'}\int \dd k\,B_i(k)\int \dd q\,K_{\ell\ell'}(k,q)P^{\thm}_{\ell'}(q).
+\]
+Interchanging the order of integration gives
+\[
+P^{\obs}_{\ell,i}=\sum_{\ell'}\int \dd q\,\underbrace{\left[\int \dd k\,B_i(k)K_{\ell\ell'}(k,q)\right]}_{\overline K^{\ell\ell'}_i(q)}P^{\thm}_{\ell'}(q).
+\]
+Next discretize the theory side. If we approximate the theory multipoles as piecewise constant or interpolated from values on bins $j$ centered at $k_j$, then
+\[
+P^{\thm}_{\ell'}(q)\approx \sum_j P^{\thm}_{\ell'}(k_j)\,\Phi_j(q),
+\]
+where $\Phi_j(q)$ is a basis function for theory bin $j$. Therefore
+\begin{align*}
+P^{\obs}_{\ell,i}
+&\approx \sum_{\ell'}\int \dd q\,\overline K^{\ell\ell'}_i(q)\sum_j P^{\thm}_{\ell'}(k_j)\Phi_j(q)\\
+&=\sum_{\ell',j}\left[\int \dd q\,\overline K^{\ell\ell'}_i(q)\Phi_j(q)\right]P^{\thm}_{\ell'}(k_j).
+\end{align*}
+This identifies the matrix elements
+\[
+\boxed{
+\mathcal W^{\ell\ell'}_{ij}\equiv \int \dd q\,\overline K^{\ell\ell'}_i(q)\Phi_j(q),
+}
+\]
+so that the binned observable becomes
+\[
+\boxed{
+P^{\obs}_{\ell,i}=\sum_{\ell',j}\mathcal W^{\ell\ell'}_{ij}P^{\thm}_{\ell'}(k_j).
+}
+\]
+In words, each matrix element tells us how much theory power in bin $(\ell',j)$ contributes to the measured band power $(\ell,i)$. Once the problem is discretized, the survey convolution is simply matrix multiplication.
+
+\section*{Exercise 2. Why include $P_4$ if only $P_0$ and $P_2$ are measured?}
+\textbf{Question.} Suppose your data vector contains only the monopole and quadrupole. Explain why it is still necessary to include $P_4(k)$ in the theory vector before the window multiplication.
+
+\bigskip
+\textbf{Solution.}
+The survey window does not only mix nearby $k$-values; it also mixes \emph{multipoles}. In matrix form, the observed monopole and quadrupole are schematically
+\[
+\begin{pmatrix}
+P^{\obs}_0\\
+P^{\obs}_2
+\end{pmatrix}
+=
+\begin{pmatrix}
+W^{00} & W^{02} & W^{04}\\
+W^{20} & W^{22} & W^{24}
+\end{pmatrix}
+\begin{pmatrix}
+P^{\thm}_0\\
+P^{\thm}_2\\
+P^{\thm}_4
+\end{pmatrix}.
+\]
+Even if the data vector stores only $P_0^{\obs}$ and $P_2^{\obs}$, the terms $W^{04}P_4^{\thm}$ and $W^{24}P_4^{\thm}$ can be non-zero. So the observed low-order multipoles receive leakage from the theory hexadecapole.
+
+If one were to omit $P_4^{\thm}$ entirely, the forward model would effectively assume this leakage is zero. That would generally distort the predicted monopole and quadrupole and can bias the inferred BAO or RSD parameters. The effect is especially relevant for anisotropic masks or estimators that induce stronger multipole mixing.
+
+So the rule is: the \emph{theory} vector must include every multipole that can leak into the \emph{measured} data vector through the survey window, even if those higher multipoles are not directly reported as data.
+
+\section*{Exercise 3. Invariance of the Gaussian likelihood under an invertible linear transformation}
+\textbf{Question.} Show explicitly that for any invertible matrix $\M$, transforming $\dvec$, $\C$ and $\W$ as in the lecture leaves the Gaussian likelihood unchanged.
+
+\bigskip
+\textbf{Solution.}
+The original Gaussian likelihood is
+\[
+\chi^2=(\dvec-\W\tvec)^T\C^{-1}(\dvec-\W\tvec).
+\]
+The transformed quantities are
+\[
+\dvec'=\M\dvec,
+\qquad
+\C'=\M\C\M^T,
+\qquad
+\W'=\M\W.
+\]
+Then the transformed residual is
+\[
+\dvec'-\W'\tvec = \M\dvec-\M\W\tvec = \M(\dvec-\W\tvec).
+\]
+Also, because $\M$ is invertible,
+\[
+(\C')^{-1}=(\M\C\M^T)^{-1}=\M^{-T}\C^{-1}\M^{-1},
+\]
+where $\M^{-T}\equiv (\M^{-1})^T$. Therefore
+\begin{align*}
+\chi'^2
+&=(\dvec'-\W'\tvec)^T(\C')^{-1}(\dvec'-\W'\tvec)\\
+&=[\M(\dvec-\W\tvec)]^T\,\M^{-T}\C^{-1}\M^{-1}\,[\M(\dvec-\W\tvec)]\\
+&=(\dvec-\W\tvec)^T\M^T\M^{-T}\C^{-1}\M^{-1}\M(\dvec-\W\tvec)\\
+&=(\dvec-\W\tvec)^T\C^{-1}(\dvec-\W\tvec)\\
+&=\chi^2.
+\end{align*}
+Hence
+\[
+\boxed{\chi'^2=\chi^2.}
+\]
+So an invertible linear transformation of the data space does not change the information content of the Gaussian likelihood, provided the data vector, covariance matrix, and window operator are all transformed consistently.
+
+\section*{Exercise 4. Why a $\theta$-cut helps fiber assignment but broadens the raw window}
+\textbf{Question.} In words, explain why a $\theta$-cut can improve robustness against fiber assignment while simultaneously making the raw power-spectrum window matrix less diagonal.
+
+\bigskip
+\textbf{Solution.}
+Fiber assignment mainly affects pairs with very small angular separations, because two nearby targets can compete for the same fiber resources. A $\theta$-cut removes or downweights exactly those problematic close-angle pairs, so the measurement becomes less sensitive to incompleteness from fiber assignment. In that sense the estimator is made more robust.
+
+However, a sharp cut in angular pair space is a non-local operation in Fourier space. Any abrupt real-space or angular-space truncation translates into a broader mode-coupling kernel in $k$-space. Therefore the resulting survey window mixes a wider range of Fourier modes and becomes less diagonal. Put differently: better control of the observational systematic is gained at the price of a more extended window convolution.
+
+This is why DESI uses the rotated-window formalism. The information is not lost, but it is repackaged into a basis where the effective window is more compact and therefore easier to model with perturbation theory.
+
+\section*{Homework 1. Alcock--Paczynski reparameterization}
+\textbf{Question.} Starting from
+\[
+\alpha=\alpha_{\perp}^{2/3}\alpha_{\parallel}^{1/3},
+\qquad
+1+\epsilon=\left(\frac{\alpha_{\parallel}}{\alpha_{\perp}}\right)^{1/3},
+\]
+derive the inverse relations
+\[
+\alpha_{\perp}=\frac{\alpha}{1+\epsilon},
+\qquad
+\alpha_{\parallel}=\alpha(1+\epsilon)^2.
+\]
+Then evaluate $(\alpha_{\perp},\alpha_{\parallel})$ for $(\alpha,\epsilon)=(1.02,0.01)$.
+
+\bigskip
+\textbf{Solution.}
+Start from
+\[
+1+\epsilon=\left(\frac{\alpha_{\parallel}}{\alpha_{\perp}}\right)^{1/3}.
+\]
+Cube both sides:
+\[
+(1+\epsilon)^3=\frac{\alpha_{\parallel}}{\alpha_{\perp}}.
+\]
+Hence
+\[
+\alpha_{\parallel}=\alpha_{\perp}(1+\epsilon)^3.
+\]
+Now substitute this into the definition of $\alpha$:
+\begin{align*}
+\alpha
+&=\alpha_{\perp}^{2/3}\alpha_{\parallel}^{1/3}
+=\alpha_{\perp}^{2/3}\big[\alpha_{\perp}(1+\epsilon)^3\big]^{1/3}\\
+&=\alpha_{\perp}^{2/3}\alpha_{\perp}^{1/3}(1+\epsilon)
+=\alpha_{\perp}(1+\epsilon).
+\end{align*}
+Therefore
+\[
+\boxed{\alpha_{\perp}=\frac{\alpha}{1+\epsilon}.}
+\]
+Using $\alpha_{\parallel}=\alpha_{\perp}(1+\epsilon)^3$, we obtain
+\[
+\boxed{\alpha_{\parallel}=\alpha(1+\epsilon)^2.}
+\]
+Now insert $(\alpha,\epsilon)=(1.02,0.01)$, so $1+\epsilon=1.01$:
+\[
+\alpha_{\perp}=\frac{1.02}{1.01}=1.00990099\ldots \approx 1.0099,
+\]
+\[
+\alpha_{\parallel}=1.02\times(1.01)^2=1.02\times 1.0201=1.040502\approx 1.0405.
+\]
+Thus
+\[
+\boxed{(\alpha_{\perp},\alpha_{\parallel})\approx (1.0099,\,1.0405).}
+\]
+
+\section*{Homework 2. Block structure of the window matrix}
+\textbf{Question.} Suppose the measured data vector contains $(P_0,P_2)$ in $N_d=30$ $k$-bins, while the theory vector contains $(P_0,P_2,P_4)$ on a fine grid with $N_t=150$ points. Write the dimensions of $\dvec$, $\tvec$ and $\W$, and sketch the block form of $\W$. Which blocks encode leakage from higher multipoles into the observed monopole and quadrupole?
+
+\bigskip
+\textbf{Solution.}
+The data vector contains two measured multipoles over $30$ bins each, so
+\[
+\boxed{\dvec\in\mathbb R^{2N_d}=\mathbb R^{60}.}
+\]
+The theory vector contains three multipoles over $150$ fine-grid points each, so
+\[
+\boxed{\tvec\in\mathbb R^{3N_t}=\mathbb R^{450}.}
+\]
+The window matrix maps the theory vector into the data vector, hence
+\[
+\boxed{\W\in\mathbb R^{60\times 450}.}
+\]
+Its natural block form is
+\[
+\boxed{
+\W=
+\begin{pmatrix}
+\W^{00} & \W^{02} & \W^{04}\\
+\W^{20} & \W^{22} & \W^{24}
+\end{pmatrix},
+}
+\]
+where each block $\W^{\ell\ell'}$ has size $30\times 150$. Here:
+\begin{itemize}[leftmargin=*]
+    \item the first block row predicts the observed monopole $P_0^{\obs}$;
+    \item the second block row predicts the observed quadrupole $P_2^{\obs}$;
+    \item the three block columns describe contributions from theory $P_0^{\thm}$, $P_2^{\thm}$, and $P_4^{\thm}$.
+\end{itemize}
+So the specific leakage from the higher theory multipole $P_4$ is encoded in
+\[
+\boxed{\W^{04}\ \text{and}\ \W^{24}.}
+\]
+More generally, every off-diagonal block encodes multipole mixing. Thus $\W^{02}$ and $\W^{20}$ describe mixing between monopole and quadrupole, while $\W^{04}$ and $\W^{24}$ describe the leakage of the hexadecapole into the observed low-order multipoles.
+
+\section*{Homework 3. DESI-style forward model}
+\textbf{Question.} Write pseudocode for one likelihood evaluation in which you: (i) compute unconvolved theory multipoles on a fine $k$ grid; (ii) stack them into a theory vector; (iii) apply the survey window by matrix multiplication; (iv) add broadband nuisance terms; and (v) evaluate $\chi^2$ with the covariance matrix.
+
+\bigskip
+\textbf{Solution.}
+A compact Julia-style implementation is:
+
+\begin{lstlisting}
+function evaluate_chi2(theta, nuisance, kfine, kdata, W, Cinv, data)
+    # 1. Compute unconvolved theory multipoles on the fine grid.
+    P0_th, P2_th, P4_th = bao_theory_multipoles(kfine, theta)
+
+    # 2. Stack them into one theory vector.
+    t = vcat(P0_th, P2_th, P4_th)
+
+    # 3. Convolve with the survey window.
+    model = W * t
+
+    # 4. Add broadband nuisance terms in the data space.
+    bb0 = nuisance.a01 ./ kdata.^3 .+ nuisance.a02 ./ kdata.^2 .+
+          nuisance.a03 ./ kdata .+ nuisance.a04 .+ nuisance.a05 .* kdata
+    bb2 = nuisance.a21 ./ kdata.^3 .+ nuisance.a22 ./ kdata.^2 .+
+          nuisance.a23 ./ kdata .+ nuisance.a24 .+ nuisance.a25 .* kdata
+    model .+= vcat(bb0, bb2)
+
+    # 5. Evaluate chi^2.
+    r = data - model
+    chi2 = dot(r, Cinv * r)
+    return chi2
+end
+\end{lstlisting}
+
+The logic of this pseudocode is exactly the lecture logic:
+\begin{enumerate}[leftmargin=*]
+    \item build the unconvolved theory on a grid fine enough to represent the oscillatory BAO signal and the window convolution accurately;
+    \item stack all theory multipoles that can leak into the measurement;
+    \item apply the measured survey window through one matrix-vector multiplication;
+    \item add the smooth nuisance contribution used to absorb broadband modelling uncertainty;
+    \item compare the final model to the observed data vector with the inverse covariance matrix.
+\end{enumerate}
+I also provide the standalone Julia file \texttt{lecture13\_bao\_forward\_model.jl}, which implements the same forward-modelling structure in a compact pedagogical script.
+
+\section*{Homework 4. Why use a fine theory grid?}
+\textbf{Question.} In a short paragraph, explain why DESI evaluates the unconvolved power spectrum on a $k$ grid finer and broader than the fitted data vector before applying the window matrix. What can go wrong if the theory grid is too coarse or truncated too aggressively in $k$?
+
+\bigskip
+\textbf{Solution.}
+The survey window acts like an integral kernel, not like a point-by-point rescaling. Therefore the predicted value in one observed $k$-bin generally depends on theory power from a range of nearby and sometimes more distant $k$-values, as well as on leaked higher multipoles. A fine theory grid is needed so that the BAO wiggles, AP distortions, and window coupling are sampled accurately enough that the matrix multiplication is a faithful discretization of the continuous convolution. The theory grid must also extend beyond the fitted data range, because the window can pull power from outside the nominal fitting interval into the observed bins, especially near the edges or when the window has long tails. If the grid is too coarse, one gets interpolation and discretization errors and the BAO oscillations can be misrepresented. If it is truncated too aggressively, one gets edge effects and misses out-of-range contributions, which can bias the convolved prediction and therefore bias the inferred BAO parameters.
+
+\end{document}
